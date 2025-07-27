@@ -48,7 +48,9 @@ cd To_Do_List
 ```
 
 ##  Screenshots
-<img width="1160" height="881" alt="image" src="https://github.com/user-attachments/assets/657c5bf7-3370-4e64-9b59-70d86529c63b" />
+<img width="749" height="635" alt="image" src="https://github.com/user-attachments/assets/222922f6-f4e1-4efc-a9c6-87e57ffb750e" />
+
+
 
 ##  Author
 Tanisha Thakur
