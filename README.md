@@ -8,6 +8,8 @@ A visually pleasing and functional to-do list (daily planner) desktop applicatio
 -  **Real-Time Calendar Card**: Displays the current day, date, and month dynamically.
 -  **Session Persistence**: Tasks are saved when the app is closed and restored when reopened.
 -  **Custom UI**: Aesthetic purple-themed design using Qt Style Sheets.
+-  **Task Categories**: Tasks can include a category (e.g., Work, Personal), shown next to the task title.
+-  **Task Description**: Add detailed descriptions for tasks, visible on hover or click.
 
 ##  UI Components
 - `QLineEdit` for entering tasks
@@ -15,6 +17,8 @@ A visually pleasing and functional to-do list (daily planner) desktop applicatio
 - `QListWidget` for displaying tasks
 - `QProgressBar` to show task completion percentage
 - `QFrame` with `QLabels` to show the current date and day
+- `QSettings` – for saving and restoring task list and progress
+- `QDialog` or  `QInputDialog` – for entering task descriptions and selecting categories
 
 ##  Technologies Used
 - **Programming Language**: C++
@@ -48,7 +52,7 @@ cd To_Do_List
 ```
 
 ##  Screenshots
-<img width="1160" height="881" alt="image" src="https://github.com/user-attachments/assets/657c5bf7-3370-4e64-9b59-70d86529c63b" />
+<img width="749" height="635" alt="image" src="https://github.com/user-attachments/assets/222922f6-f4e1-4efc-a9c6-87e57ffb750e" />
 
 ##  Author
 Tanisha Thakur
