@@ -3,6 +3,10 @@
 
 #include <QSettings>
 #include <QCloseEvent>
+#include <QProcess>
+#include <QMessageBox>
+
+
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -13,6 +17,8 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     ui->progressBar->setValue(0);
 
+    // Add categories programmatically
+    ui->categoryComboBox->addItems(QStringList() << "Work" << "Personal" << "Shopping" << "Study" << "Others");
 
     // load saved tasks
     loadTasks();
@@ -22,6 +28,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->finishbtn, &QPushButton::clicked, this, &MainWindow::handleFinishButton);
     connect(ui->taskDisplay, &QListWidget::itemChanged, this, &MainWindow::handleTaskItemChanged);
     connect(ui->enterTask, &QLineEdit::returnPressed, this, &MainWindow::handleAddTaskButton);
+    connect(ui->categoryComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), [=](int){ ui->enterTask->setFocus(); });
 
     // Timer to update calendarCard every minute
     dateTimer = new QTimer(this);
@@ -53,7 +60,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     settings.endArray();
 
-
 }
 
 MainWindow::~MainWindow()
@@ -64,21 +70,33 @@ MainWindow::~MainWindow()
 void MainWindow::handleAddTaskButton()
 {
     QString taskText = ui->enterTask->text().trimmed();
+    QString category = ui->categoryComboBox->currentText();
+    QString description = ui->descriptionInput->toPlainText().trimmed(); // for QTextEdit
 
     if (!taskText.isEmpty()) {
+        QString fullTask = taskText;
 
+        if (!category.isEmpty()) {
+            fullTask += " (" + category + ")";
+        }
 
-        // Format with bullet
-        QString formattedText = "• " + taskText;
+        if (!description.isEmpty()) {
+            fullTask += "\n  = " + description;
+        }
 
-        QListWidgetItem *item = new QListWidgetItem(formattedText);
+        QListWidgetItem *item = new QListWidgetItem(fullTask);
+        QFont font = item->font();
+        font.setPointSize(10);
+        item->setFont(font);
         item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
+        item->setCheckState(Qt::Unchecked);
 
         ui->taskDisplay->addItem(item);
 
         totalTasks++;
         updateProgressBar();
         ui->enterTask->clear();
+        ui->descriptionInput->clear();
     }
 }
 
@@ -152,7 +170,6 @@ void MainWindow::handleTaskDoubleClick(QListWidgetItem *item)
     updateProgressBar();
 }
 
-
 void MainWindow::closeEvent(QCloseEvent *event)
 {
     QSettings settings(" ", "ToDoApp");
@@ -169,9 +186,6 @@ void MainWindow::closeEvent(QCloseEvent *event)
     QMainWindow::closeEvent(event);
 }
 
-
-
-
 void MainWindow::saveTasks()
 {
     QSettings settings("MyCompany", "MyTodoApp");
@@ -185,15 +199,14 @@ void MainWindow::saveTasks()
         // Skip items that are striked through
         if (!item->font().strikeOut()) {
             settings.setArrayIndex(saveIndex++);
-            settings.setValue("text", item->text());
+            settings.setValue("task_" + QString::number(i) + "/text", item->text());
+            settings.setValue("task_" + QString::number(i) + "/category", item->data(Qt::UserRole + 1).toString());
+
         }
     }
 
     settings.endArray();
 }
-
-
-
 
 void MainWindow::loadTasks()
 {
@@ -202,14 +215,16 @@ void MainWindow::loadTasks()
 
     for (int i = 0; i < size; ++i) {
         settings.setArrayIndex(i);
-        QString text = settings.value("text").toString();
+        QString taskText = settings.value("task_" + QString::number(i) + "/text").toString();
+        QString category = settings.value("task_" + QString::number(i) + "/category").toString();
         bool struck = settings.value("struck").toBool();
 
-        QListWidgetItem *item = new QListWidgetItem(text);
+        QListWidgetItem *item = new QListWidgetItem(taskText);
         QFont font = item->font();
         font.setStrikeOut(struck);
         item->setFont(font);
         item->setForeground(struck ? Qt::gray : Qt::black);
+        item->setData(Qt::UserRole + 1, category);
 
         ui->taskDisplay->addItem(item);
         totalTasks++;
@@ -219,7 +234,3 @@ void MainWindow::loadTasks()
     settings.endArray();
     updateProgressBar();
 }
-
-
-
-

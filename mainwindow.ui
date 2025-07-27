@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>926</width>
-    <height>708</height>
+    <height>786</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -216,7 +216,7 @@ QProgressBar::chunk {
      <rect>
       <x>310</x>
       <y>140</y>
-      <width>451</width>
+      <width>471</width>
       <height>71</height>
      </rect>
     </property>
@@ -229,7 +229,7 @@ QProgressBar::chunk {
     padding-right: 15px;
     height: 40px;
     font-size: 15px;
-    color: #444;
+    color: #9370DB;
     box-shadow: 0px 4px 8px rgba(0,0,0,0.1); 
 }
 </string>
@@ -275,7 +275,7 @@ text-align:center;
     <property name="geometry">
      <rect>
       <x>300</x>
-      <y>630</y>
+      <y>710</y>
       <width>331</width>
       <height>71</height>
      </rect>
@@ -298,7 +298,7 @@ text-align:center;
  letter-spacing: 1px;
 }
     QPushButton:hover {
-  background-color: #c3d1a5;
+  background-color: #E6E6FA;
  cursor: pointer;
 }
 </string>
@@ -316,10 +316,10 @@ text-align:center;
    <widget class="QListWidget" name="taskDisplay">
     <property name="geometry">
      <rect>
-      <x>20</x>
-      <y>230</y>
+      <x>30</x>
+      <y>380</y>
       <width>871</width>
-      <height>391</height>
+      <height>321</height>
      </rect>
     </property>
     <property name="styleSheet">
@@ -328,11 +328,61 @@ text-align:center;
     border-radius: 20px;
     border: 8px solid #9370DB;           /* Soft border */
     padding: 20px;
-    color: #4a4a4a;
+    color: #9370DB;
     font-family: 'Courier New', monospace;
 font-size: 15px;
 font-weight:bold;
 }</string>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="categoryComboBox">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>230</y>
+      <width>251</width>
+      <height>51</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color:#F8F8FF;
+color: #9370DB;
+border:5px solid #9370DB;
+padding:10px;</string>
+    </property>
+    <property name="placeholderText">
+     <string>choose category</string>
+    </property>
+    <property name="duplicatesEnabled">
+     <bool>false</bool>
+    </property>
+   </widget>
+   <widget class="QTextEdit" name="descriptionInput">
+    <property name="geometry">
+     <rect>
+      <x>310</x>
+      <y>220</y>
+      <width>581</width>
+      <height>151</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QFrame{
+	background-color: #F8F8FF;           /* Light cream-white background */
+    border-radius: 20px;
+    border: 8px solid #9370DB;           /* Soft border */
+    padding: 20px;
+    color: #9370DB;
+    font-family: 'Courier New', monospace;
+font-size: 15px;
+font-weight:bold;
+}</string>
+    </property>
+    <property name="documentTitle">
+     <string/>
+    </property>
+    <property name="placeholderText">
+     <string>Add Description....</string>
     </property>
    </widget>
   </widget>
