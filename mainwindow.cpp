@@ -5,8 +5,14 @@
 #include <QCloseEvent>
 #include <QProcess>
 #include <QMessageBox>
-
-
+#include <QSystemTrayIcon>
+#include <QTimer>
+#include <QDateTime>
+#include <QListWidgetItem>
+#include <QDebug>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QSizePolicy>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -15,55 +21,61 @@ MainWindow::MainWindow(QWidget *parent)
     , completedTasks(0)
 {
     ui->setupUi(this);
-    ui->progressBar->setValue(0);
 
-    // Add categories programmatically
+    ui->progressBar->setValue(0);
     ui->categoryComboBox->addItems(QStringList() << "Work" << "Personal" << "Shopping" << "Study" << "Others");
 
-    // load saved tasks
     loadTasks();
 
-    // Connect buttons and task change signal
     connect(ui->addtask, &QPushButton::clicked, this, &MainWindow::handleAddTaskButton);
     connect(ui->finishbtn, &QPushButton::clicked, this, &MainWindow::handleFinishButton);
     connect(ui->taskDisplay, &QListWidget::itemChanged, this, &MainWindow::handleTaskItemChanged);
     connect(ui->enterTask, &QLineEdit::returnPressed, this, &MainWindow::handleAddTaskButton);
     connect(ui->categoryComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), [=](int){ ui->enterTask->setFocus(); });
 
-    // Timer to update calendarCard every minute
     dateTimer = new QTimer(this);
     connect(dateTimer, &QTimer::timeout, this, &MainWindow::updateCalendarCard);
-    dateTimer->start(1000); // update every 1 second
+    dateTimer->start(1000);
 
-    // Call once immediately on startup
     updateCalendarCard();
 
-    connect(ui->taskDisplay, &QListWidget::itemDoubleClicked,
-            this, &MainWindow::handleTaskDoubleClick);
-
+    connect(ui->taskDisplay, &QListWidget::itemDoubleClicked, this, &MainWindow::handleTaskDoubleClick);
 
     QSettings settings("MyCompany", "MyApp");
     int size = settings.beginReadArray("tasks");
-
     for (int i = 0; i < size; ++i) {
         settings.setArrayIndex(i);
         QString text = settings.value("text").toString();
         bool isCompleted = settings.value("isCompleted").toBool();
-
         QListWidgetItem *item = new QListWidgetItem(text);
         QFont font = item->font();
         font.setStrikeOut(isCompleted);
         item->setFont(font);
-
         ui->taskDisplay->addItem(item);
     }
-
     settings.endArray();
+
+    reminderCheckTimer = new QTimer(this);
+    connect(reminderCheckTimer, &QTimer::timeout, this, &MainWindow::checkReminders);
+    reminderCheckTimer->start(60000);
+
+    trayIcon = new QSystemTrayIcon(this);
+    trayIcon->setIcon(QIcon::fromTheme("application-exit"));
+    trayIcon->show();
+
+    connect(ui->searchInput, &QLineEdit::textChanged, this, &MainWindow::filterTasks);
+
 
 }
 
+
 MainWindow::~MainWindow()
 {
+    if (reminderCheckTimer) {
+        reminderCheckTimer->stop();
+        delete reminderCheckTimer;
+        reminderCheckTimer = nullptr;
+    }
     delete ui;
 }
 
@@ -71,10 +83,12 @@ void MainWindow::handleAddTaskButton()
 {
     QString taskText = ui->enterTask->text().trimmed();
     QString category = ui->categoryComboBox->currentText();
-    QString description = ui->descriptionInput->toPlainText().trimmed(); // for QTextEdit
+    QString description = ui->descriptionInput->toPlainText().trimmed();
+    QTime reminderTime = ui->reminderTimeEdit->time();
 
     if (!taskText.isEmpty()) {
         QString fullTask = taskText;
+        qDebug() << "[Task Added] " << fullTask << " Reminder:" << reminderTime.toString("HH:mm");
 
         if (!category.isEmpty()) {
             fullTask += " (" + category + ")";
@@ -97,8 +111,15 @@ void MainWindow::handleAddTaskButton()
         updateProgressBar();
         ui->enterTask->clear();
         ui->descriptionInput->clear();
+
+        // Store reminder if time is set
+        if (reminderTime.isValid()) {
+            reminderMap.insert(fullTask, reminderTime);
+        }
     }
+
 }
+
 
 void MainWindow::handleTaskItemChanged(QListWidgetItem *item)
 {
@@ -133,16 +154,11 @@ void MainWindow::handleFinishButton()
 
 void MainWindow::updateCalendarCard()
 {
-    QDateTime current = QDateTime::currentDateTime();
-
-    QString day = current.date().toString("dddd");   // Full weekday name
-    QString date = current.date().toString("dd");    // Day as 01, 02...
-    QString month = current.date().toString("MMMM"); // Full month name
-
-    ui->dayLabel->setText(day);
-    ui->dateCircle->setText(date);
-    ui->monthLabel->setText(month);
+    QDate currentDate = QDate::currentDate();
+    QString formattedDate = currentDate.toString("MMMM d, dddd"); // e.g., "July 27, Saturday"
+    ui->dateLabel->setText(formattedDate);
 }
+
 
 void MainWindow::handleTaskDoubleClick(QListWidgetItem *item)
 {
@@ -181,10 +197,16 @@ void MainWindow::closeEvent(QCloseEvent *event)
         settings.setValue("text", item->text());
         settings.setValue("struck", item->font().strikeOut());
     }
-
     settings.endArray();
-    QMainWindow::closeEvent(event);
+
+    if (reminderCheckTimer) {
+        reminderCheckTimer->stop();
+    }
+
+    // Accept the close event — no need to call base class here
+    event->accept();
 }
+
 
 void MainWindow::saveTasks()
 {
@@ -234,3 +256,36 @@ void MainWindow::loadTasks()
     settings.endArray();
     updateProgressBar();
 }
+
+
+void MainWindow::checkReminders() {
+    QTime currentTime = QTime::currentTime();
+
+    for (auto it = reminderMap.begin(); it != reminderMap.end(); ) {
+        if (it.value().hour() == currentTime.hour() &&
+            it.value().minute() == currentTime.minute()) {
+
+            // Show system tray popup with default sound
+            trayIcon->showMessage(
+                "Task Reminder",           // title
+                "⏰ " + it.key(),           // message text
+                QSystemTrayIcon::Information,
+                8000                      // duration in ms
+                );
+
+            // Remove reminder from map
+            it = reminderMap.erase(it);
+        } else {
+            ++it; // only increment if not erasing
+        }
+    }
+}
+
+void MainWindow::filterTasks(const QString &searchText) {
+    for (int i = 0; i < ui->taskDisplay->count(); ++i) {
+        QListWidgetItem *item = ui->taskDisplay->item(i);
+        bool match = item->text().contains(searchText, Qt::CaseInsensitive);
+        item->setHidden(!match);
+    }
+}
+

@@ -4,6 +4,9 @@
 #include <QDateTime>
 #include <QCloseEvent>
 #include <QSettings>
+#include <QTime>
+#include <QMap>
+#include <QSystemTrayIcon>
 
 
 QT_BEGIN_NAMESPACE
@@ -23,6 +26,7 @@ private slots:
     void handleFinishButton();                  // Replaces on_finishbtn_clicked
     void handleTaskItemChanged(QListWidgetItem *item); // Replaces on_taskdisplay_itemChanged
     void handleTaskDoubleClick(QListWidgetItem *item);
+    void checkReminders();
 
 private:
     Ui::MainWindow *ui;
@@ -34,6 +38,14 @@ private:
     void updateProgressBar();
     void saveTasks();
     void loadTasks();
+
+    QTimer *reminderCheckTimer;
+    QMap<QString, QTime> reminderMap;
+    QSystemTrayIcon *trayIcon;
+
+    void filterTasks(const QString &searchText);
+
+
 
 protected:
     void closeEvent(QCloseEvent *event) override;
